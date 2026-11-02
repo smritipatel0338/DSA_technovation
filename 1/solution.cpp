@@ -21,8 +21,7 @@ public:
                 ++left;
             } 
             else {
-                --right;
-            }
+                --right; }
         }
         
         return {};
