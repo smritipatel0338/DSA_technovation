@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FUTURE YOU: Superhero Habit Digital Twin</title>
+  
+  <!-- Google Fonts: Orbitron, Space Grotesk, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#070A12',
+            'obsidian-card': 'rgba(11, 16, 29, 0.75)',
+            'bio-green': '#00E676',
+            'electric-cyan': '#00F2FE',
+            'kryptonite-crimson': '#FF1744',
+            'toxic-purple': '#A855F7',
+            'plasma-blue': '#0072FF',
+            'solar-gold': '#FFB300'
+          },
+          fontFamily: {
+            orbitron: ['Orbitron', 'sans-serif'],
+            space: ['Space Grotesk', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          animation: {
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'spin-slow': 'spin 18s linear infinite',
+            'glitch-subtle': 'glitch 2s ease-in-out infinite'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Three.js & GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+  <style>
+    /* Custom Scrollbar for HUD */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(7, 10, 18, 0.9);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 242, 254, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 242, 254, 0.6);
+    }
+
+    /* Dynamic Chromatic Themes */
+    .path-flourishing {
+      --neon-primary: #00E676;
+      --neon-secondary: #00F2FE;
+      --neon-glow: 0 0 25px rgba(0, 230, 118, 0.35);
+      --border-glow: rgba(0, 242, 254, 0.45);
+      --badge-bg: rgba(0, 230, 118, 0.15);
+      --status-color: #00E676;
+    }
+
+    .path-burnout {
+      --neon-primary: #FF1744;
+      --neon-secondary: #FF5252;
+      --neon-glow: 0 0 30px rgba(255, 23, 68, 0.45);
+      --border-glow: rgba(255, 23, 68, 0.6);
+      --badge-bg: rgba(255, 23, 68, 0.2);
+      --status-color: #FF1744;
+    }
+
+    /* Glassmorphic Deck Core */
+    .glass-deck {
+      background: rgba(11, 16, 29, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(255, 255, 255, 0.02);
+      transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    }
+
+    .glass-deck:hover {
+      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.7), var(--neon-glow);
+    }
+
+    /* Scanline Noise Overlay for Burnout / Chaos */
+    #scanline-overlay {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.2),
+        rgba(0, 0, 0, 0.2) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+    }
+
+    .path-burnout #scanline-overlay {
+      opacity: 0.9;
+      animation: scanlineFlicker 0.1s infinite;
+    }
+
+    @keyframes scanlineFlicker {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(1.5px); }
+      100% { transform: translateY(0); }
+    }
+
+    /* Toxic Ring Shaking Animation */
+    @keyframes toxicShakeKeyframes {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      20% { transform: translate(-3px, 2px) rotate(-1.5deg); }
+      40% { transform: translate(3px, -2px) rotate(1.5deg); }
+      60% { transform: translate(-2px, -1.5px) rotate(-1deg); }
+      80% { transform: translate(2px, 2.5px) rotate(1.2deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
+    .ring-toxic-shake {
+      animation: toxicShakeKeyframes 0.24s infinite ease-in-out;
+    }
+
+    /* Custom Holographic Energy Range Sliders */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+
+    /* Sliders track base */
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 10px;
+      cursor: pointer;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.2s ease;
+    }
+
+    /* Dynamic Holographic Energy Capsule Tracks */
+    .slider-sleep::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, #00F2FE 0%, #0072FF var(--fill-pct, 85%), rgba(0, 114, 255, 0.12) var(--fill-pct, 85%), rgba(255, 255, 255, 0.04) 100%);
+      box-shadow: inset 0 0 10px rgba(0, 242, 254, 0.45);
+    }
+    .slider-study::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, #FFB300 0%, #FF6D00 var(--fill-pct, 80%), rgba(255, 109, 0, 0.12) var(--fill-pct, 80%), rgba(255, 255, 255, 0.04) 100%);
+      box-shadow: inset 0 0 10px rgba(255, 179, 0, 0.45);
+    }
+    .slider-sunlight::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, #FFE600 0%, #FF9100 var(--fill-pct, 75%), rgba(255, 145, 0, 0.12) var(--fill-pct, 75%), rgba(255, 255, 255, 0.04) 100%);
+      box-shadow: inset 0 0 10px rgba(255, 230, 0, 0.45);
+    }
+    .slider-weeds::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, #A855F7 0%, #FF1744 var(--fill-pct, 20%), rgba(255, 23, 68, 0.15) var(--fill-pct, 20%), rgba(255, 255, 255, 0.04) 100%);
+      box-shadow: inset 0 0 12px rgba(255, 23, 68, 0.6);
+    }
+    .slider-spending::-webkit-slider-runnable-track {
+      background: linear-gradient(to right, #00E676 0%, #00F2FE var(--fill-pct, 90%), rgba(0, 230, 118, 0.12) var(--fill-pct, 90%), rgba(255, 255, 255, 0.04) 100%);
+      box-shadow: inset 0 0 10px rgba(0, 230, 118, 0.45);
+    }
+
+    /* Slider thumb styled as a cyber capacitor core */
+    input[type=range]::-webkit-slider-thumb {
+      height: 22px;
+      width: 22px;
+      border-radius: 6px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -6px;
+      box-shadow: 0 0 14px currentColor, 0 0 2px #fff;
+      border: 2px solid #ffffff;
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.28);
+    }
+
+    input[type=range]::-webkit-slider-thumb:active {
+      transform: scale(1.1);
+    }
+
+    /* Specific Slider Thumb Colors */
+    .slider-sleep::-webkit-slider-thumb {
+      background: #00F2FE;
+      color: #00F2FE;
+    }
+    .slider-study::-webkit-slider-thumb {
+      background: #FFB300;
+      color: #FFB300;
+    }
+    .slider-sunlight::-webkit-slider-thumb {
+      background: #FFE600;
+      color: #FFE600;
+    }
+    .slider-weeds::-webkit-slider-thumb {
+      background: #FF1744;
+      color: #FF1744;
+    }
+    .slider-spending::-webkit-slider-thumb {
+      background: #00E676;
+      color: #00E676;
+    }
+
+    /* 3D Multiverse Holographic Tilt Card */
+    .multiverse-card {
+      transform-style: preserve-3d;
+      transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+      will-change: transform;
+    }
+    .card-content-3d {
+      transform: translateZ(30px);
+    }
+    .card-sheen {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.22) 0%, transparent 65%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .multiverse-card:hover .card-sheen {
+      opacity: 1;
+    }
+
+    /* SVG Radial Progress Ring */
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.65s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s ease;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Audio wave bars */
+    .audio-bar {
+      animation: audioWave 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes audioWave {
+      0% { height: 4px; }
+      100% { height: 18px; }
+    }
+  </style>
+</head>
+
+<body class="bg-obsidian text-slate-100 min-h-screen overflow-x-hidden font-space select-none path-flourishing">
+
+  <!-- Scanline Noise Layer for Burnout Chaos Mode -->
+  <div id="scanline-overlay"></div>
+
+  <!-- Main Viewport Split Layout: Left 60% HUD / Right 40% WebGL -->
+  <div class="relative w-full min-h-screen flex flex-col lg:flex-row overflow-hidden">
+    
+    <!-- ========================================== -->
+    <!-- LEFT 60%: Advanced Superhero HUD Deck     -->
+    <!-- ========================================== -->
+    <section id="hud-deck" class="w-full lg:w-[60%] min-h-screen lg:h-screen lg:overflow-y-auto px-5 py-6 md:px-8 md:py-8 flex flex-col gap-6 relative z-20">
+      
+      <!-- Top Cyber Navigation & Meta Telemetry -->
+      <header class="hud-stagger-item flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="relative w-10 h-10 rounded-lg glass-deck flex items-center justify-center text-xl text-electric-cyan border border-electric-cyan/40 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+            <span class="animate-pulse">⚡</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-mono tracking-widest uppercase px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">
+                MK-VIII NEURAL TWIN
+              </span>
+              <span id="quantum-sync-rate" class="text-[10px] font-mono text-bio-green tracking-wider">
+                SYNC: 99.8%
+              </span>
+            </div>
+            <h1 class="text-xl md:text-2xl font-orbitron font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-400">
+              FUTURE YOU <span class="text-xs font-mono text-electric-cyan ml-1 font-normal opacity-80">// AVATAR BIO-CORE</span>
+            </h1>
+          </div>
+        </div>
+
+        <!-- Controls: Sound + Archetype Switcher -->
+        <div class="flex items-center gap-3">
+          <!-- Audio Synthesizer Toggle -->
+          <button id="btn-audio-toggle" class="glass-deck px-3 py-2 rounded-lg text-xs font-mono flex items-center gap-2 text-slate-300 hover:text-white transition">
+            <div id="audio-wave-container" class="flex items-center gap-0.5 h-4 w-4">
+              <div class="w-1 bg-bio-green rounded-full audio-bar" style="animation-delay: 0s;"></div>
+              <div class="w-1 bg-bio-green rounded-full audio-bar" style="animation-delay: 0.2s;"></div>
+              <div class="w-1 bg-bio-green rounded-full audio-bar" style="animation-delay: 0.4s;"></div>
+            </div>
+            <span id="audio-status-label">AUDIO: ON</span>
+          </button>
+
+          <!-- Species Archetype Switcher -->
+          <div class="glass-deck p-1 rounded-xl flex items-center gap-1 border border-white/15">
+            <button data-archetype="sakura" class="btn-archetype active px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition flex items-center gap-1.5 bg-electric-cyan/20 text-electric-cyan border border-electric-cyan/40">
+              <span>🌸</span>
+              <span class="hidden sm:inline">SAKURA</span>
+            </button>
+            <button data-archetype="oak" class="btn-archetype px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+              <span>🌳</span>
+              <span class="hidden sm:inline">CYBER-OAK</span>
+            </button>
+            <button data-archetype="lotus" class="btn-archetype px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+              <span>🪷</span>
+              <span class="hidden sm:inline">LOTUS</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Habit Momentum Score (HMS) Hero Dashboard Ring -->
+      <div class="hud-stagger-item glass-deck rounded-2xl p-6 relative overflow-hidden">
+        <!-- Background Neon Radial Aura -->
+        <div id="hms-glow-orb" class="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-bio-green/10 blur-3xl pointer-events-none transition-all duration-700"></div>
+
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+          
+          <!-- Floating Interactive SVG Ring Progress -->
+          <div class="flex items-center gap-5">
+            <div id="hms-ring-container" class="relative w-32 h-32 flex-shrink-0">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                <!-- Track Ring -->
+                <circle cx="60" cy="60" r="48" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="transparent" />
+                <!-- Progress Glowing Ring -->
+                <circle id="hms-progress-circle" class="progress-ring-circle" cx="60" cy="60" r="48" stroke="#00E676" stroke-width="8" stroke-linecap="round" fill="transparent" stroke-dasharray="301.59" stroke-dashoffset="60" />
+              </svg>
+              <!-- Center Metric -->
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span id="hms-score-display" class="font-orbitron font-black text-3xl md:text-4xl tracking-tight text-white drop-shadow-[0_0_12px_rgba(0,230,118,0.6)]">
+                  84
+                </span>
+                <span class="text-[9px] font-mono tracking-widest text-slate-400 uppercase">HMS SCORE</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center gap-2 mb-1.5">
+                <span id="hms-path-badge" class="px-2.5 py-1 rounded-md text-[11px] font-mono font-bold tracking-wider uppercase border border-bio-green/40 bg-bio-green/15 text-bio-green shadow-[0_0_12px_rgba(0,230,118,0.25)]">
+                  ⚡ FLOURISHING // AVENGER PATH
+                </span>
+              </div>
+              <h2 id="hms-verdict-title" class="text-base md:text-lg font-bold font-space text-slate-100">
+                Apex Cyber-Monk Equilibrium
+              </h2>
+              <p id="hms-verdict-desc" class="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">
+                Biomechanical twin is synthesizing peak neural clarity, deep sleep regeneration, and high financial reserves.
+              </p>
+            </div>
+          </div>
+
+          <!-- Quick Telemetry Stats -->
+          <div class="grid grid-cols-2 gap-3 w-full md:w-auto text-xs font-mono">
+            <div class="glass-deck p-3 rounded-xl border border-white/10 flex flex-col">
+              <span class="text-slate-400 text-[10px]">CORRUPTION RISK</span>
+              <span id="stat-corruption" class="font-bold text-sm text-electric-cyan mt-0.5">LOW (20%)</span>
+            </div>
+            <div class="glass-deck p-3 rounded-xl border border-white/10 flex flex-col">
+              <span class="text-slate-400 text-[10px]">FOLIAGE MASS</span>
+              <span id="stat-foliage" class="font-bold text-sm text-bio-green mt-0.5">92% PRIME</span>
+            </div>
+            <div class="glass-deck p-3 rounded-xl border border-white/10 flex flex-col">
+              <span class="text-slate-400 text-[10px]">NEURAL DENSITY</span>
+              <span id="stat-neural" class="font-bold text-sm text-solar-gold mt-0.5">80 GFLOP</span>
+            </div>
+            <div class="glass-deck p-3 rounded-xl border border-white/10 flex flex-col">
+              <span class="text-slate-400 text-[10px]">SOVEREIGNTY</span>
+              <span id="stat-sovereignty" class="font-bold text-sm text-white mt-0.5">TIER IV</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Habit Matrix Sliders: 5 Holographic Energy Cores -->
+      <div class="hud-stagger-item flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-electric-cyan animate-ping"></span>
+            <h3 class="text-sm font-orbitron font-bold tracking-wider uppercase text-slate-200">
+              HABIT MATRIX CORES // BIOMECHANICAL ENERGY INLETS
+            </h3>
+          </div>
+          <button id="btn-auto-synergy" class="text-[11px] font-mono text-electric-cyan hover:underline hover:text-white transition">
+            [⚡ MAX SYNERGY PRESET]
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          
+          <!-- Slider 1: Restful Moisture (Sleep) -->
+          <div class="glass-deck p-4 rounded-xl flex flex-col gap-2 relative overflow-hidden group">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium flex items-center gap-1.5 text-blue-300">
+                <span>💧</span> Restful Moisture (Sleep)
+              </span>
+              <span id="val-sleep" class="font-mono font-bold text-electric-cyan">85% // 8.2 hrs</span>
+            </div>
+            <div class="relative flex items-center">
+              <input type="range" id="slider-sleep" min="0" max="100" value="85" class="slider-sleep">
+            </div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+              <span>Cellular Fatigue</span>
+              <span>Deep REM Recovery</span>
+            </div>
+          </div>
+
+          <!-- Slider 2: Mineral Soil (Study/DSA) -->
+          <div class="glass-deck p-4 rounded-xl flex flex-col gap-2 relative overflow-hidden group">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium flex items-center gap-1.5 text-amber-300">
+                <span>🪨</span> Mineral Soil (Study/DSA)
+              </span>
+              <span id="val-study" class="font-mono font-bold text-solar-gold">80% // Hard DSA</span>
+            </div>
+            <div class="relative flex items-center">
+              <input type="range" id="slider-study" min="0" max="100" value="80" class="slider-study">
+            </div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+              <span>Erosion & Brain Fog</span>
+              <span>Crystalline Synapse</span>
+            </div>
+          </div>
+
+          <!-- Slider 3: Sunlight Rays (Activity) -->
+          <div class="glass-deck p-4 rounded-xl flex flex-col gap-2 relative overflow-hidden group">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium flex items-center gap-1.5 text-yellow-300">
+                <span>☀</span> Sunlight Rays (Activity)
+              </span>
+              <span id="val-sunlight" class="font-mono font-bold text-yellow-400">75% // 10k Steps</span>
+            </div>
+            <div class="relative flex items-center">
+              <input type="range" id="slider-sunlight" min="0" max="100" value="75" class="slider-sunlight">
+            </div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+              <span>Sedentary Dormancy</span>
+              <span>Solar Kinetic Drive</span>
+            </div>
+          </div>
+
+          <!-- Slider 4: Screen Weeds (Doomscrolling) - THE KRYPTONITE INPUT -->
+          <div class="glass-deck p-4 rounded-xl flex flex-col gap-2 relative overflow-hidden group border-kryptonite-crimson/30">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium flex items-center gap-1.5 text-red-400">
+                <span>🐛</span> Screen Weeds (Doomscrolling)
+              </span>
+              <span id="val-weeds" class="font-mono font-bold text-kryptonite-crimson">20% // Safe</span>
+            </div>
+            <div class="relative flex items-center">
+              <input type="range" id="slider-weeds" min="0" max="100" value="20" class="slider-weeds">
+            </div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+              <span>Clean Zen Horizon</span>
+              <span class="text-red-400 font-bold">Rot & Constriction</span>
+            </div>
+          </div>
+
+          <!-- Slider 5: Root Expansion (Frugal Spending) - Spans 2 cols on md -->
+          <div class="glass-deck p-4 rounded-xl flex flex-col gap-2 relative overflow-hidden group md:col-span-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-medium flex items-center gap-1.5 text-emerald-300">
+                <span>🪴</span> Root Expansion (Frugal Spending & Capital Reserves)
+              </span>
+              <span id="val-spending" class="font-mono font-bold text-bio-green">90% // Sovereign Vault</span>
+            </div>
+            <div class="relative flex items-center">
+              <input type="range" id="slider-spending" min="0" max="100" value="90" class="slider-spending">
+            </div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-500">
+              <span>Depleted Capital Runway</span>
+              <span>Unshakable Compounding Bastion</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Parallel Multiverse Cards: 4 Holographic Deck Cards with 3D Parallax Tilt -->
+      <div class="hud-stagger-item flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-orbitron font-bold tracking-wider uppercase text-slate-200">
+            PARALLEL MULTIVERSE TIMELINES // 90-DAY PROJECTIONS
+          </h3>
+          <span class="text-[10px] font-mono text-slate-400">HOVER TO INSPECT QUANTUM SHIFT</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          
+          <!-- Card 1: Physical (Bio-Vitality) -->
+          <div class="multiverse-card glass-deck p-4 rounded-xl relative cursor-pointer" data-category="physical">
+            <div class="card-sheen"></div>
+            <div class="card-content-3d flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono font-bold text-blue-400 flex items-center gap-1.5">
+                  <span>🧬</span> BIO-VITALITY & SLEEP
+                </span>
+                <span class="card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                  94% PEAK
+                </span>
+              </div>
+              <h4 class="card-outcome text-sm font-bold text-white font-space">
+                Titan Mitochondrial Regeneration
+              </h4>
+              <p class="card-detail text-[11px] text-slate-400 leading-relaxed">
+                Cellular repair cycles complete in record time. VO2 max ceiling elevated, zero afternoon neural lag.
+              </p>
+              <div class="mt-1 flex items-center justify-between text-[10px] font-mono border-t border-white/5 pt-2 text-slate-400">
+                <span>HRV: <strong class="text-electric-cyan font-bold">115 ms</strong></span>
+                <span>ATP SYNTHESIS: <strong class="text-bio-green font-bold">OPTIMAL</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Academic (Cognitive Synapse / DSA) -->
+          <div class="multiverse-card glass-deck p-4 rounded-xl relative cursor-pointer" data-category="academic">
+            <div class="card-sheen"></div>
+            <div class="card-content-3d flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono font-bold text-amber-400 flex items-center gap-1.5">
+                  <span>🧠</span> NEURAL MESH (DSA / SYSTEMS)
+                </span>
+                <span class="card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                  88% PEAK
+                </span>
+              </div>
+              <h4 class="card-outcome text-sm font-bold text-white font-space">
+                Grandmaster Algorithmic Reflex
+              </h4>
+              <p class="card-detail text-[11px] text-slate-400 leading-relaxed">
+                Complex graph theories and distributed consensus models resolve effortlessly under extreme interview pressure.
+              </p>
+              <div class="mt-1 flex items-center justify-between text-[10px] font-mono border-t border-white/5 pt-2 text-slate-400">
+                <span>INTELLECT INDEX: <strong class="text-solar-gold font-bold">2,150 ELO</strong></span>
+                <span>GRAPH RECALL: <strong class="text-electric-cyan font-bold">SUB-SECOND</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Financial (Sovereign Vault) -->
+          <div class="multiverse-card glass-deck p-4 rounded-xl relative cursor-pointer" data-category="financial">
+            <div class="card-sheen"></div>
+            <div class="card-content-3d flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+                  <span>🏛</span> CAPITAL SOVEREIGNTY
+                </span>
+                <span class="card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                  92% SHIELD
+                </span>
+              </div>
+              <h4 class="card-outcome text-sm font-bold text-white font-space">
+                Autonomous Freedom Citadel
+              </h4>
+              <p class="card-detail text-[11px] text-slate-400 leading-relaxed">
+                Zero lifestyle creep, relentless automated dividend compounding, and 36+ months of sovereign liquidity.
+              </p>
+              <div class="mt-1 flex items-center justify-between text-[10px] font-mono border-t border-white/5 pt-2 text-slate-400">
+                <span>RUNWAY: <strong class="text-bio-green font-bold">38 MONTHS</strong></span>
+                <span>LEAKAGE: <strong class="text-slate-200 font-bold">$0.00 / DAY</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Mental (Zenith Anti-Rot) -->
+          <div class="multiverse-card glass-deck p-4 rounded-xl relative cursor-pointer" data-category="mental">
+            <div class="card-sheen"></div>
+            <div class="card-content-3d flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono font-bold text-purple-400 flex items-center gap-1.5">
+                  <span>🛡</span> ZENITH ANTI-ROT
+                </span>
+                <span class="card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                  ANTI-DOOM 80%
+                </span>
+              </div>
+              <h4 class="card-outcome text-sm font-bold text-white font-space">
+                Deep-Focus Bastion Unbroken
+              </h4>
+              <p class="card-detail text-[11px] text-slate-400 leading-relaxed">
+                Immune to algorithmic doomscrolling and dopamine desensitization. Extended 4-hour uninterrupted flow states.
+              </p>
+              <div class="mt-1 flex items-center justify-between text-[10px] font-mono border-t border-white/5 pt-2 text-slate-400">
+                <span>ATTENTION SPAN: <strong class="text-electric-cyan font-bold">240 MINS</strong></span>
+                <span>SEROTONIN: <strong class="text-bio-green font-bold">STABLE</strong></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Quick Preset & Telemetry Actions -->
+      <footer class="hud-stagger-item flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/10 text-xs font-mono text-slate-400">
+        <div class="flex items-center gap-3">
+          <button id="btn-chaos-preset" class="hover:text-kryptonite-crimson transition flex items-center gap-1">
+            <span>☣</span> SIMULATE BURNOUT CHAOS
+          </button>
+          <span class="text-white/20">|</span>
+          <button id="btn-reset-equilibrium" class="hover:text-electric-cyan transition flex items-center gap-1">
+            <span>↺</span> EQUILIBRIUM RESET
+          </button>
+        </div>
+        <div class="flex items-center gap-2 text-[10px]">
+          <span class="w-2 h-2 rounded-full bg-bio-green animate-pulse"></span>
+          <span>THREE.JS WEBGL ENGINE v128 ONLINE</span>
+        </div>
+      </footer>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- RIGHT 40%: Real-Time 3D WebGL Canvas Twin  -->
+    <!-- ========================================== -->
+    <section id="canvas-container" class="w-full lg:w-[40%] h-[550px] lg:h-screen relative overflow-hidden bg-obsidian flex items-center justify-center">
+      
+      <!-- Three.js Canvas Host -->
+      <div id="webgl-viewport" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+      <!-- Real-Time 3D Canvas HUD Overlays -->
+      
+      <!-- Top Canvas Badge: Camera Telemetry & Orbit Guide -->
+      <div class="absolute top-6 left-6 z-10 pointer-events-none flex flex-col gap-1">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-1 rounded bg-black/60 backdrop-blur-md border border-white/15 text-[10px] font-mono text-slate-300">
+            HERO CAM: 3D INTERACTIVE
+          </span>
+          <span id="canvas-fps-badge" class="px-2 py-0.5 rounded bg-black/60 backdrop-blur-md border border-bio-green/30 text-[10px] font-mono text-bio-green">
+            60 FPS
+          </span>
+        </div>
+        <span class="text-[9px] font-mono text-slate-400 tracking-wider">
+          DRAG TO ROTATE // SCROLL TO ZOOM // RIGHT-CLICK TO PAN
+        </span>
+      </div>
+
+      <!-- Floating Plant Status HUD Overlay (Bottom Right) -->
+      <div class="absolute bottom-6 right-6 z-10 pointer-events-none flex flex-col gap-1.5 items-end">
+        <div class="glass-deck px-3 py-2 rounded-xl text-right border border-white/10 max-w-[220px]">
+          <div class="text-[9px] font-mono text-slate-400 uppercase">BOTANICAL TWIN ENGINE</div>
+          <div id="plant-species-name" class="text-xs font-bold font-orbitron text-electric-cyan">
+            🌸 SAKURA CYBER-BLOOM
+          </div>
+          <div class="w-full bg-white/10 h-1.5 rounded-full mt-1.5 overflow-hidden">
+            <div id="plant-vitality-bar" class="h-full bg-gradient-to-r from-bio-green to-electric-cyan transition-all duration-300" style="width: 85%;"></div>
+          </div>
+          <div class="flex justify-between items-center text-[8px] font-mono text-slate-400 mt-1">
+            <span>VITALITY: <strong id="hud-vitality-num" class="text-white">85%</strong></span>
+            <span>THORNS: <strong id="hud-thorns-num" class="text-kryptonite-crimson">20%</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Camera Quick Perspective Buttons -->
+      <div class="absolute bottom-6 left-6 z-10 flex items-center gap-1.5">
+        <button id="cam-view-hero" class="glass-deck px-2.5 py-1.5 rounded-lg text-[10px] font-mono hover:text-white transition text-slate-300">
+          HERO
+        </button>
+        <button id="cam-view-canopy" class="glass-deck px-2.5 py-1.5 rounded-lg text-[10px] font-mono hover:text-white transition text-slate-300">
+          CANOPY
+        </button>
+        <button id="cam-view-roots" class="glass-deck px-2.5 py-1.5 rounded-lg text-[10px] font-mono hover:text-white transition text-slate-300">
+          ROOTS
+        </button>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- ======================================================= -->
+  <!-- JAVASCRIPT: Full Architectural Logic & WebGL Core       -->
+  <!-- ======================================================= -->
+  <script>
+    /* =====================================================
+     * 1. AUDIO SYNTHESIZER (Zero External Assets - Web Audio API)
+     * ===================================================== */
+    class CyberAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.08, gainVal = 0.05) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {
+          // Audio blocked or unsupported
+        }
+      }
+
+      playSliderTick(val) {
+        const freq = 200 + val * 6;
+        this.playTone(freq, 'triangle', 0.04, 0.02);
+      }
+
+      playArchetypeBurst() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          const chord = [440, 554.37, 659.25, 880];
+          chord.forEach((f, i) => {
+            setTimeout(() => this.playTone(f, 'sine', 0.4, 0.04), i * 60);
+          });
+        } catch (e) {}
+      }
+
+      playWarningDrone() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          this.playTone(85, 'sawtooth', 0.35, 0.06);
+        } catch (e) {}
+      }
+
+      playAscensionChime() {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          const chord = [523.25, 659.25, 783.99, 1046.50];
+          chord.forEach((f, i) => {
+            setTimeout(() => this.playTone(f, 'sine', 0.5, 0.05), i * 80);
+          });
+        } catch (e) {}
+      }
+    }
+
+    const soundSystem = new CyberAudioEngine();
+
+    /* =====================================================
+     * 2. STATE MANAGEMENT & CALCULATIONS
+     * ===================================================== */
+    const State = {
+      sleep: 85,
+      study: 80,
+      sunlight: 75,
+      weeds: 20, // Doomscrolling kryptonite input
+      spending: 90,
+      score: 84,
+      archetype: 'sakura', // 'sakura', 'oak', 'lotus'
+      audioEnabled: true,
+      lastScoreState: 'flourishing'
+    };
+
+    // Calculate Habit Momentum Score (HMS)
+    // Formula: 0.25*Sleep + 0.25*Study + 0.20*(100 - Weeds) + 0.15*Movement + 0.15*Spending
+    function calculateHMS() {
+      const screenSafety = Math.max(0, 100 - State.weeds);
+      const rawScore = (
+        0.25 * State.sleep +
+        0.25 * State.study +
+        0.20 * screenSafety +
+        0.15 * State.sunlight +
+        0.15 * State.spending
+      );
+      return Math.round(Math.min(100, Math.max(0, rawScore)));
+    }
+
+    /* =====================================================
+     * 3. UI CONTROLLER & MULTIVERSE PARALLAX
+     * ===================================================== */
+    const UI = {
+      scoreDisplay: document.getElementById('hms-score-display'),
+      progressCircle: document.getElementById('hms-progress-circle'),
+      ringContainer: document.getElementById('hms-ring-container'),
+      pathBadge: document.getElementById('hms-path-badge'),
+      verdictTitle: document.getElementById('hms-verdict-title'),
+      verdictDesc: document.getElementById('hms-verdict-desc'),
+      hmsGlowOrb: document.getElementById('hms-glow-orb'),
+      
+      valSleep: document.getElementById('val-sleep'),
+      valStudy: document.getElementById('val-study'),
+      valSunlight: document.getElementById('val-sunlight'),
+      valWeeds: document.getElementById('val-weeds'),
+      valSpending: document.getElementById('val-spending'),
+
+      sliderSleep: document.getElementById('slider-sleep'),
+      sliderStudy: document.getElementById('slider-study'),
+      sliderSunlight: document.getElementById('slider-sunlight'),
+      sliderWeeds: document.getElementById('slider-weeds'),
+      sliderSpending: document.getElementById('slider-spending'),
+
+      statCorruption: document.getElementById('stat-corruption'),
+      statFoliage: document.getElementById('stat-foliage'),
+      statNeural: document.getElementById('stat-neural'),
+      statSovereignty: document.getElementById('stat-sovereignty'),
+
+      plantVitalityBar: document.getElementById('plant-vitality-bar'),
+      hudVitalityNum: document.getElementById('hud-vitality-num'),
+      hudThornsNum: document.getElementById('hud-thorns-num'),
+      plantSpeciesName: document.getElementById('plant-species-name'),
+
+      body: document.body,
+
+      init() {
+        this.bindSliders();
+        this.bindArchetypes();
+        this.bindMultiverseTilt();
+        this.bindPresets();
+        this.bindAudioToggle();
+        this.updateSliderTrackFills();
+        this.update();
+      },
+
+      bindSliders() {
+        const sliders = [
+          { el: this.sliderSleep, key: 'sleep', valEl: this.valSleep },
+          { el: this.sliderStudy, key: 'study', valEl: this.valStudy },
+          { el: this.sliderSunlight, key: 'sunlight', valEl: this.valSunlight },
+          { el: this.sliderWeeds, key: 'weeds', valEl: this.valWeeds },
+          { el: this.sliderSpending, key: 'spending', valEl: this.valSpending },
+        ];
+
+        sliders.forEach(({ el, key }) => {
+          el.addEventListener('input', (e) => {
+            const v = parseFloat(e.target.value);
+            State[key] = v;
+            el.style.setProperty('--fill-pct', `${v}%`);
+            soundSystem.playSliderTick(v);
+            this.update();
+          });
+        });
+      },
+
+      updateSliderTrackFills() {
+        this.sliderSleep.style.setProperty('--fill-pct', `${State.sleep}%`);
+        this.sliderStudy.style.setProperty('--fill-pct', `${State.study}%`);
+        this.sliderSunlight.style.setProperty('--fill-pct', `${State.sunlight}%`);
+        this.sliderWeeds.style.setProperty('--fill-pct', `${State.weeds}%`);
+        this.sliderSpending.style.setProperty('--fill-pct', `${State.spending}%`);
+      },
+
+      bindArchetypes() {
+        const buttons = document.querySelectorAll('.btn-archetype');
+        buttons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const archetype = btn.getAttribute('data-archetype');
+            if (State.archetype === archetype) return;
+            State.archetype = archetype;
+
+            buttons.forEach(b => {
+              b.classList.remove('active', 'bg-electric-cyan/20', 'text-electric-cyan', 'border-electric-cyan/40');
+              b.classList.add('text-slate-400');
+            });
+
+            btn.classList.add('active', 'bg-electric-cyan/20', 'text-electric-cyan', 'border-electric-cyan/40');
+            btn.classList.remove('text-slate-400');
+
+            // Trigger Archetype Shockwave in 3D & Audio
+            soundSystem.playArchetypeBurst();
+            Twin3D.triggerArchetypeExplosion();
+            this.updateArchetypeHUD();
+          });
+        });
+      },
+
+      updateArchetypeHUD() {
+        const names = {
+          sakura: '🌸 SAKURA CYBER-BLOOM',
+          oak: '🌳 TITAN YGGDRASIL OAK',
+          lotus: '🪷 ZENITH QUANTUM LOTUS'
+        };
+        this.plantSpeciesName.textContent = names[State.archetype] || 'CYBER-BOTANICAL TWIN';
+      },
+
+      bindMultiverseTilt() {
+        const cards = document.querySelectorAll('.multiverse-card');
+        cards.forEach(card => {
+          card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            const rotateX = ((y - centerY) / centerY) * -12;
+            const rotateY = ((x - centerX) / centerX) * 12;
+
+            card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.025, 1.025, 1.025)`;
+            card.style.setProperty('--mouse-x', `${(x / rect.width) * 100}%`);
+            card.style.setProperty('--mouse-y', `${(y / rect.height) * 100}%`);
+          });
+
+          card.addEventListener('mouseleave', () => {
+            card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+          });
+        });
+      },
+
+      bindPresets() {
+        // Max Synergy
+        document.getElementById('btn-auto-synergy').addEventListener('click', () => {
+          gsap.to(State, {
+            sleep: 95,
+            study: 90,
+            sunlight: 85,
+            weeds: 5,
+            spending: 95,
+            duration: 0.8,
+            ease: 'power2.out',
+            onUpdate: () => this.syncInputsToState()
+          });
+          soundSystem.playAscensionChime();
+        });
+
+        // Chaos Burnout
+        document.getElementById('btn-chaos-preset').addEventListener('click', () => {
+          gsap.to(State, {
+            sleep: 20,
+            study: 30,
+            sunlight: 15,
+            weeds: 92,
+            spending: 25,
+            duration: 0.8,
+            ease: 'power2.out',
+            onUpdate: () => this.syncInputsToState()
+          });
+          soundSystem.playWarningDrone();
+        });
+
+        // Equilibrium Reset
+        document.getElementById('btn-reset-equilibrium').addEventListener('click', () => {
+          gsap.to(State, {
+            sleep: 80,
+            study: 75,
+            sunlight: 70,
+            weeds: 25,
+            spending: 80,
+            duration: 0.8,
+            ease: 'power2.out',
+            onUpdate: () => this.syncInputsToState()
+          });
+          soundSystem.playSliderTick(50);
+        });
+      },
+
+      syncInputsToState() {
+        this.sliderSleep.value = State.sleep;
+        this.sliderStudy.value = State.study;
+        this.sliderSunlight.value = State.sunlight;
+        this.sliderWeeds.value = State.weeds;
+        this.sliderSpending.value = State.spending;
+        this.updateSliderTrackFills();
+        this.update();
+      },
+
+      bindAudioToggle() {
+        const btn = document.getElementById('btn-audio-toggle');
+        const label = document.getElementById('audio-status-label');
+        const waves = document.getElementById('audio-wave-container');
+
+        btn.addEventListener('click', () => {
+          soundSystem.enabled = !soundSystem.enabled;
+          State.audioEnabled = soundSystem.enabled;
+          if (soundSystem.enabled) {
+            label.textContent = 'AUDIO: ON';
+            waves.style.opacity = '1';
+            soundSystem.playSliderTick(80);
+          } else {
+            label.textContent = 'AUDIO: MUTED';
+            waves.style.opacity = '0.3';
+          }
+        });
+      },
+
+      update() {
+        const score = calculateHMS();
+        State.score = score;
+
+        // Dynamic Score Ring
+        this.scoreDisplay.textContent = score;
+        const circumference = 2 * Math.PI * 48; // 301.59
+        const offset = circumference - (score / 100) * circumference;
+        this.progressCircle.style.strokeDashoffset = offset;
+
+        // Reactive Chromatic Status States
+        const isFlourishing = score >= 75;
+
+        if (isFlourishing) {
+          if (State.lastScoreState !== 'flourishing') {
+            soundSystem.playAscensionChime();
+            State.lastScoreState = 'flourishing';
+          }
+          this.body.classList.remove('path-burnout');
+          this.body.classList.add('path-flourishing');
+
+          this.progressCircle.style.stroke = '#00E676';
+          this.pathBadge.className = 'px-2.5 py-1 rounded-md text-[11px] font-mono font-bold tracking-wider uppercase border border-bio-green/40 bg-bio-green/15 text-bio-green shadow-[0_0_12px_rgba(0,230,118,0.25)]';
+          this.pathBadge.textContent = '⚡ FLOURISHING // AVENGER PATH';
+          this.verdictTitle.textContent = 'Apex Cyber-Monk Equilibrium';
+          this.verdictDesc.textContent = 'Biomechanical twin is synthesizing peak neural clarity, deep sleep regeneration, and high financial reserves.';
+          this.hmsGlowOrb.className = 'absolute -right-16 -top-16 w-56 h-56 rounded-full bg-bio-green/10 blur-3xl pointer-events-none transition-all duration-700';
+          this.scoreDisplay.className = 'font-orbitron font-black text-3xl md:text-4xl tracking-tight text-white drop-shadow-[0_0_12px_rgba(0,230,118,0.6)]';
+        } else {
+          if (State.lastScoreState !== 'burnout') {
+            soundSystem.playWarningDrone();
+            State.lastScoreState = 'burnout';
+          }
+          this.body.classList.remove('path-flourishing');
+          this.body.classList.add('path-burnout');
+
+          this.progressCircle.style.stroke = '#FF1744';
+          this.pathBadge.className = 'px-2.5 py-1 rounded-md text-[11px] font-mono font-bold tracking-wider uppercase border border-kryptonite-crimson/50 bg-kryptonite-crimson/20 text-kryptonite-crimson shadow-[0_0_16px_rgba(255,23,68,0.35)]';
+          this.pathBadge.textContent = '☣ CRITICAL CHAOS // BURNOUT RISK';
+          this.verdictTitle.textContent = 'Dopamine Parasite Contamination';
+          this.verdictDesc.textContent = 'Toxic screen weeds constricting twin chassis. Cellular sleep deficit and capital leakage approaching threshold.';
+          this.hmsGlowOrb.className = 'absolute -right-16 -top-16 w-56 h-56 rounded-full bg-kryptonite-crimson/15 blur-3xl pointer-events-none transition-all duration-700';
+          this.scoreDisplay.className = 'font-orbitron font-black text-3xl md:text-4xl tracking-tight text-kryptonite-crimson drop-shadow-[0_0_14px_rgba(255,23,68,0.8)]';
+        }
+
+        // Toxic Shaking on Ring if Doomscrolling exceeds threshold (Score degradation & weeds > 60)
+        if (State.weeds > 60) {
+          this.ringContainer.classList.add('ring-toxic-shake');
+        } else {
+          this.ringContainer.classList.remove('ring-toxic-shake');
+        }
+
+        // Update Slider Text Labels
+        const sleepHours = (4 + (State.sleep / 100) * 5.5).toFixed(1);
+        this.valSleep.textContent = `${Math.round(State.sleep)}% // ${sleepHours} hrs`;
+        this.valStudy.textContent = `${Math.round(State.study)}% // ${State.study > 70 ? 'Hard DSA' : 'Stagnant'}`;
+        this.valSunlight.textContent = `${Math.round(State.sunlight)}% // ${Math.round(State.sunlight * 140)} steps`;
+        this.valWeeds.textContent = `${Math.round(State.weeds)}% // ${State.weeds > 60 ? 'TOXIC ROT' : 'Safe'}`;
+        this.valSpending.textContent = `${Math.round(State.spending)}% // ${State.spending > 70 ? 'Sovereign' : 'Leakage'}`;
+
+        // Update Telemetry Badges
+        this.statCorruption.textContent = `${State.weeds > 60 ? 'CRITICAL' : 'LOW'} (${Math.round(State.weeds)}%)`;
+        this.statCorruption.className = `font-bold text-sm mt-0.5 ${State.weeds > 60 ? 'text-kryptonite-crimson animate-pulse' : 'text-electric-cyan'}`;
+
+        const foliageVal = Math.round((State.sleep * 0.5 + State.sunlight * 0.5));
+        this.statFoliage.textContent = `${foliageVal}% PRIME`;
+        this.statNeural.textContent = `${Math.round(State.study * 1.3)} GFLOP`;
+        this.statSovereignty.textContent = State.spending > 75 ? 'TIER IV' : (State.spending > 40 ? 'TIER II' : 'DEPLETED');
+
+        // Update Canvas HUD Overlay
+        this.plantVitalityBar.style.width = `${score}%`;
+        this.hudVitalityNum.textContent = `${score}%`;
+        this.hudThornsNum.textContent = `${Math.round(State.weeds)}%`;
+
+        // Update Multiverse Cards with dynamic outcomes based on score
+        this.updateMultiverseCards(score);
+      },
+
+      updateMultiverseCards(score) {
+        // Physical Card
+        const physicalCard = document.querySelector('[data-category="physical"]');
+        if (physicalCard) {
+          const outcome = physicalCard.querySelector('.card-outcome');
+          const detail = physicalCard.querySelector('.card-detail');
+          const prob = physicalCard.querySelector('.card-prob');
+          if (State.sleep >= 70 && State.sunlight >= 60) {
+            outcome.textContent = 'Titan Mitochondrial Peak';
+            detail.textContent = 'Deep REM cycles synchronized. VO2 max ceiling elevated, zero afternoon neural lag.';
+            prob.textContent = '94% PEAK';
+            prob.className = 'card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20';
+          } else {
+            outcome.textContent = 'Cellular Burnout & Cortisol Spike';
+            detail.textContent = 'Micro-sleep episodes, chronic systemic inflammation, and mitochondrial depletion.';
+            prob.textContent = 'RISK 82%';
+            prob.className = 'card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30';
+          }
+        }
+
+        // Academic Card
+        const academicCard = document.querySelector('[data-category="academic"]');
+        if (academicCard) {
+          const outcome = academicCard.querySelector('.card-outcome');
+          const detail = academicCard.querySelector('.card-detail');
+          const prob = academicCard.querySelector('.card-prob');
+          if (State.study >= 65) {
+            outcome.textContent = 'Grandmaster Algorithmic Reflex';
+            detail.textContent = 'Complex graph systems and distributed protocols resolve effortlessly under intense pressure.';
+            prob.textContent = '88% PEAK';
+            prob.className = 'card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20';
+          } else {
+            outcome.textContent = 'Cognitive Atrophy & Brain Fog';
+            detail.textContent = 'Memory recall latency spiking. Inability to synthesize deep algorithmic abstractions.';
+            prob.textContent = 'STAGNANT';
+            prob.className = 'card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30';
+          }
+        }
+
+        // Financial Card
+        const financialCard = document.querySelector('[data-category="financial"]');
+        if (financialCard) {
+          const outcome = financialCard.querySelector('.card-outcome');
+          const detail = financialCard.querySelector('.card-detail');
+          const prob = financialCard.querySelector('.card-prob');
+          if (State.spending >= 70) {
+            outcome.textContent = 'Autonomous Freedom Citadel';
+            detail.textContent = 'Zero lifestyle inflation. Automated compounding delivers 36+ months of sovereign liquidity.';
+            prob.textContent = '92% SHIELD';
+            prob.className = 'card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20';
+          } else {
+            outcome.textContent = 'Vulnerable Runway Collapse';
+            detail.textContent = 'Impulse micro-transactions bleeding wealth reserves. High existential career anxiety.';
+            prob.textContent = 'BLEEDING';
+            prob.className = 'card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30';
+          }
+        }
+
+        // Mental Card
+        const mentalCard = document.querySelector('[data-category="mental"]');
+        if (mentalCard) {
+          const outcome = mentalCard.querySelector('.card-outcome');
+          const detail = mentalCard.querySelector('.card-detail');
+          const prob = mentalCard.querySelector('.card-prob');
+          if (State.weeds <= 40) {
+            outcome.textContent = 'Deep-Focus Bastion Unbroken';
+            detail.textContent = 'Immune to algorithmic doomscrolling and dopamine drain. Sustained 4-hour uninterrupted flow states.';
+            prob.textContent = 'ANTI-DOOM 90%';
+            prob.className = 'card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20';
+          } else {
+            outcome.textContent = 'Algorithmic Dopamine Parasitism';
+            detail.textContent = 'Attention span reduced to 8-second dopamine loops. Severe executive dysfunction.';
+            prob.textContent = 'PARASITIC';
+            prob.className = 'card-prob text-[10px] font-mono px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30';
+          }
+        }
+      }
+    };
+
+    /* =====================================================
+     * 4. REAL-TIME 3D WEBGL CANVAS TWIN (Three.js & Shaders)
+     * ===================================================== */
+    const Twin3D = {
+      container: document.getElementById('webgl-viewport'),
+      scene: null,
+      camera: null,
+      renderer: null,
+      controls: null,
+      clock: new THREE.Clock(),
+
+      // FPS tracking
+      frameCount: 0,
+      lastFpsTime: 0,
+      fpsBadge: document.getElementById('canvas-fps-badge'),
+
+      // 3D Objects & Hierarchy
+      twinMasterGroup: null,
+      vinylAvatarGroup: null,
+      botanicalTwinGroup: null,
+      trunkMesh: null,
+      leavesGroup: null,
+      weedsGroup: null,
+      seedPodMesh: null,
+      archetypeDecorGroup: null,
+      explosionParticles: null,
+      spaceDustParticles: null,
+      horizonGridMesh: null,
+
+      // Materials
+      vinylBodyMaterial: null,
+      vinylVisorMaterial: null,
+      plantTrunkMaterial: null,
+      plantLeafMaterial: null,
+      weedSpikeMaterial: null,
+      arcReactorMaterial: null,
+
+      // Dynamic Lerped 3D Parameters for 60 FPS Smoothness
+      lerpState: {
+        sleep: 85,
+        study: 80,
+        sunlight: 75,
+        weeds: 20,
+        spending: 90,
+        score: 84
+      },
+
+      init() {
+        const width = this.container.clientWidth;
+        const height = this.container.clientHeight;
+
+        // Scene
+        this.scene = new THREE.Scene();
+        this.scene.fog = new THREE.FogExp2(0x070A12, 0.045);
+
+        // Camera
+        this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+        this.camera.position.set(0, -6, 22); // Initial fly-through start coordinate
+
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.35;
+        this.container.appendChild(this.renderer.domElement);
+
+        // OrbitControls
+        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.06;
+        this.controls.maxDistance = 20;
+        this.controls.minDistance = 2.5;
+        this.controls.maxPolarAngle = Math.PI / 2 + 0.1; // Limit dipping below ground
+        this.controls.target.set(0, 1.2, 0);
+
+        // Lighting
+        this.setupLights();
+
+        // Custom Shaders & Horizon Grid
+        this.setupHorizonGridShader();
+
+        // Ambient Drifting Spores / Light Array
+        this.setupSpaceDust();
+
+        // Explosion Shockwave Particle Engine
+        this.setupExplosionParticleEngine();
+
+        // Build Digital Twin (Vinyl Avatar + Living Plant Engine)
+        this.buildTwinScene();
+
+        // Resize Handlers
+        window.addEventListener('resize', () => this.onResize());
+
+        // Camera View Switches
+        this.bindCameraViews();
+
+        // GSAP Fly-through sweep intro
+        this.runIntroCinematic();
+
+        // Start 60 FPS Render Loop
+        this.animate();
+      },
+
+      setupLights() {
+        const ambientLight = new THREE.AmbientLight(0x0d1527, 2.0);
+        this.scene.add(ambientLight);
+
+        // Directional Key Light
+        this.dirLight = new THREE.DirectionalLight(0xffffff, 2.2);
+        this.dirLight.position.set(5, 12, 8);
+        this.scene.add(this.dirLight);
+
+        // Dynamic Bio-Cyber Point Lights
+        this.cyberLight = new THREE.PointLight(0x00E676, 3.5, 15);
+        this.cyberLight.position.set(2, 3, 2);
+        this.scene.add(this.cyberLight);
+
+        this.cyanLight = new THREE.PointLight(0x00F2FE, 3.0, 15);
+        this.cyanLight.position.set(-2, 1, 2);
+        this.scene.add(this.cyanLight);
+
+        // Upward Rim Light
+        this.underLight = new THREE.PointLight(0x0072FF, 2.5, 12);
+        this.underLight.position.set(0, -2, 0);
+        this.scene.add(this.underLight);
+      },
+
+      setupHorizonGridShader() {
+        // Custom Vertex & Fragment Shader rendering infinite glowing cyber-horizon grid
+        const gridVertexShader = `
+          varying vec3 vWorldPosition;
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            vec4 worldPos = modelMatrix * vec4(position, 1.0);
+            vWorldPosition = worldPos.xyz;
+            gl_Position = projectionMatrix * viewMatrix * worldPos;
+          }
+        `;
+
+        const gridFragmentShader = `
+          uniform float uTime;
+          uniform vec3 uColorA;
+          uniform vec3 uColorB;
+          varying vec3 vWorldPosition;
+          varying vec2 vUv;
+
+          void main() {
+            // Coordinate grid computation
+            vec2 coord = vWorldPosition.xz * 1.5;
+            vec2 grid = abs(fract(coord - 0.5) - 0.5) / fwidth(coord);
+            float line = min(grid.x, grid.y);
+            float gridPattern = 1.0 - min(line, 1.0);
+
+            // Distance fog fade
+            float dist = length(vWorldPosition.xz);
+            float fade = smoothstep(18.0, 1.0, dist);
+
+            // Pulsing wave
+            float pulse = sin(dist * 0.8 - uTime * 2.0) * 0.5 + 0.5;
+            vec3 finalColor = mix(uColorA, uColorB, pulse);
+
+            float alpha = gridPattern * fade * 0.65;
+            gl_FragColor = vec4(finalColor, alpha);
+          }
+        `;
+
+        const gridMaterial = new THREE.ShaderMaterial({
+          vertexShader: gridVertexShader,
+          fragmentShader: gridFragmentShader,
+          uniforms: {
+            uTime: { value: 0 },
+            uColorA: { value: new THREE.Color(0x00E676) },
+            uColorB: { value: new THREE.Color(0x00F2FE) }
+          },
+          transparent: true,
+          depthWrite: false
+        });
+
+        this.horizonGridMaterial = gridMaterial;
+
+        const gridGeo = new THREE.PlaneGeometry(60, 60, 40, 40);
+        gridGeo.rotateX(-Math.PI / 2);
+        this.horizonGridMesh = new THREE.Mesh(gridGeo, gridMaterial);
+        this.horizonGridMesh.position.y = -1.8;
+        this.scene.add(this.horizonGridMesh);
+      },
+
+      setupSpaceDust() {
+        const count = 350;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const scales = new Float32Array(count);
+
+        for (let i = 0; i < count; i++) {
+          positions[i * 3] = (Math.random() - 0.5) * 22;
+          positions[i * 3 + 1] = Math.random() * 12 - 2;
+          positions[i * 3 + 2] = (Math.random() - 0.5) * 22;
+          scales[i] = Math.random() * 0.8 + 0.2;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+
+        // Circular glow particle texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0, 'rgba(0, 242, 254, 1)');
+        grad.addColorStop(0.3, 'rgba(0, 230, 118, 0.6)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 64, 64);
+        const texture = new THREE.CanvasTexture(canvas);
+
+        const material = new THREE.PointsMaterial({
+          size: 0.22,
+          map: texture,
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+
+        this.spaceDustParticles = new THREE.Points(geometry, material);
+        this.scene.add(this.spaceDustParticles);
+      },
+
+      setupExplosionParticleEngine() {
+        const count = 1200;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const velocities = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+
+        for (let i = 0; i < count; i++) {
+          positions[i * 3] = 0;
+          positions[i * 3 + 1] = 1.2;
+          positions[i * 3 + 2] = 0;
+
+          // Spherical burst velocity
+          const u = Math.random();
+          const v = Math.random();
+          const theta = u * 2.0 * Math.PI;
+          const phi = Math.acos(2.0 * v - 1.0);
+          const speed = Math.random() * 4.5 + 2.0;
+
+          velocities[i * 3] = speed * Math.sin(phi) * Math.cos(theta);
+          velocities[i * 3 + 1] = speed * Math.sin(phi) * Math.sin(theta);
+          velocities[i * 3 + 2] = speed * Math.cos(phi);
+
+          colors[i * 3] = 0.0;
+          colors[i * 3 + 1] = 0.95;
+          colors[i * 3 + 2] = 0.99;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+          size: 0.16,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+
+        this.explosionParticles = new THREE.Points(geometry, material);
+        this.explosionParticles.userData = { active: false, progress: 1 };
+        this.scene.add(this.explosionParticles);
+      },
+
+      triggerArchetypeExplosion() {
+        const p = this.explosionParticles;
+        p.material.opacity = 1.0;
+        p.userData.active = true;
+        p.userData.progress = 0;
+
+        const positions = p.geometry.attributes.position.array;
+        const colors = p.geometry.attributes.color.array;
+
+        // Determine burst color palette based on Archetype
+        let r = 0, g = 0.9, b = 1;
+        if (State.archetype === 'sakura') {
+          r = 1.0; g = 0.2; b = 0.65; // Sakura Neon Pink
+        } else if (State.archetype === 'oak') {
+          r = 0.95; g = 0.75; b = 0.1; // Golden Oak Amber
+        } else if (State.archetype === 'lotus') {
+          r = 0.0; g = 1.0; b = 0.85; // Pure Cyan / Lotus Turquoise
+        }
+
+        for (let i = 0; i < positions.length / 3; i++) {
+          positions[i * 3] = 0;
+          positions[i * 3 + 1] = 1.2;
+          positions[i * 3 + 2] = 0;
+
+          colors[i * 3] = r + (Math.random() - 0.5) * 0.2;
+          colors[i * 3 + 1] = g + (Math.random() - 0.5) * 0.2;
+          colors[i * 3 + 2] = b + (Math.random() - 0.5) * 0.2;
+        }
+
+        p.geometry.attributes.position.needsUpdate = true;
+        p.geometry.attributes.color.needsUpdate = true;
+
+        // GSAP Morph of Archetype Geometries
+        gsap.to(p.userData, {
+          progress: 1.0,
+          duration: 1.25,
+          ease: 'power2.out',
+          onComplete: () => {
+            p.userData.active = false;
+            p.material.opacity = 0;
+          }
+        });
+
+        // Trigger Botanical Mesh Geometry Regeneration
+        this.rebuildArchetypeGeometry();
+      },
+
+      buildTwinScene() {
+        this.twinMasterGroup = new THREE.Group();
+        this.scene.add(this.twinMasterGroup);
+
+        // 1. Build Floating Vinyl Avatar
+        this.buildVinylAvatar();
+
+        // 2. Build Botanical Seed / Stem Morphing Engine
+        this.buildBotanicalCore();
+
+        // 3. Build Weeds / Thorny Kryptonite Constrictors
+        this.buildConstrictingWeeds();
+
+        // 4. Build Archetype Specific Foliage Geometries
+        this.rebuildArchetypeGeometry();
+      },
+
+      buildVinylAvatar() {
+        this.vinylAvatarGroup = new THREE.Group();
+        this.twinMasterGroup.add(this.vinylAvatarGroup);
+
+        // Sleek Designer Vinyl Material (Deep Obsidian Vinyl with Clearcoat)
+        this.vinylBodyMaterial = new THREE.MeshPhysicalMaterial({
+          color: 0x0c111d,
+          roughness: 0.15,
+          metalness: 0.1,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.1,
+          reflectivity: 0.9
+        });
+
+        // Glowing Visor Material
+        this.vinylVisorMaterial = new THREE.MeshStandardMaterial({
+          color: 0x00F2FE,
+          emissive: 0x00F2FE,
+          emissiveIntensity: 1.8,
+          roughness: 0.1,
+          metalness: 0.8
+        });
+
+        // Arc Reactor Material
+        this.arcReactorMaterial = new THREE.MeshStandardMaterial({
+          color: 0x00E676,
+          emissive: 0x00E676,
+          emissiveIntensity: 2.5,
+          roughness: 0.2
+        });
+
+        // Head (Stylized Designer Vinyl Figurine)
+        const headGeo = new THREE.SphereGeometry(0.48, 32, 32);
+        headGeo.scale(1, 1.15, 1);
+        const headMesh = new THREE.Mesh(headGeo, this.vinylBodyMaterial);
+        headMesh.position.y = 2.45;
+        this.vinylAvatarGroup.add(headMesh);
+
+        // Cyber Visor Strip
+        const visorGeo = new THREE.BoxGeometry(0.72, 0.18, 0.38);
+        const visorMesh = new THREE.Mesh(visorGeo, this.vinylVisorMaterial);
+        visorMesh.position.set(0, 2.45, 0.32);
+        this.vinylAvatarGroup.add(visorMesh);
+
+        // Lateral Cybernetic Antenna Fins on helmet
+        const finGeo = new THREE.ConeGeometry(0.06, 0.32, 4);
+        finGeo.rotateZ(Math.PI / 4);
+        const leftFin = new THREE.Mesh(finGeo, this.vinylVisorMaterial);
+        leftFin.position.set(-0.48, 2.7, 0);
+        this.vinylAvatarGroup.add(leftFin);
+
+        const rightFin = leftFin.clone();
+        rightFin.rotation.z = -Math.PI / 4;
+        rightFin.position.set(0.48, 2.7, 0);
+        this.vinylAvatarGroup.add(rightFin);
+
+        // Torso / Chassis
+        const torsoGeo = new THREE.CylinderGeometry(0.42, 0.28, 0.95, 16);
+        const torsoMesh = new THREE.Mesh(torsoGeo, this.vinylBodyMaterial);
+        torsoMesh.position.y = 1.45;
+        this.vinylAvatarGroup.add(torsoMesh);
+
+        // Chest Arc-Reactor Core
+        const arcGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.08, 24);
+        arcGeo.rotateX(Math.PI / 2);
+        this.arcMesh = new THREE.Mesh(arcGeo, this.arcReactorMaterial);
+        this.arcMesh.position.set(0, 1.58, 0.35);
+        this.vinylAvatarGroup.add(this.arcMesh);
+
+        // Floating Levitation Belt Ring
+        const ringGeo = new THREE.TorusGeometry(0.45, 0.04, 16, 32);
+        ringGeo.rotateX(Math.PI / 2);
+        const ringMesh = new THREE.Mesh(ringGeo, this.vinylVisorMaterial);
+        ringMesh.position.y = 0.92;
+        this.vinylAvatarGroup.add(ringMesh);
+
+        // Shoulders & Floating Vinyl Arms (Meditative / Power levitation pose)
+        const armGeo = new THREE.CylinderGeometry(0.1, 0.08, 0.5, 16);
+        
+        // Left Arm
+        const leftArm = new THREE.Mesh(armGeo, this.vinylBodyMaterial);
+        leftArm.position.set(-0.62, 1.35, 0.1);
+        leftArm.rotation.set(0.3, 0.1, 0.4);
+        this.vinylAvatarGroup.add(leftArm);
+
+        // Right Arm
+        const rightArm = new THREE.Mesh(armGeo, this.vinylBodyMaterial);
+        rightArm.position.set(0.62, 1.35, 0.1);
+        rightArm.rotation.set(0.3, -0.1, -0.4);
+        this.vinylAvatarGroup.add(rightArm);
+
+        // Floating Vinyl Legs (Poised Lotus / Hover stance)
+        const legGeo = new THREE.CylinderGeometry(0.14, 0.09, 0.75, 16);
+        const leftLeg = new THREE.Mesh(legGeo, this.vinylBodyMaterial);
+        leftLeg.position.set(-0.28, 0.45, 0.05);
+        leftLeg.rotation.set(0.2, 0.05, 0.15);
+        this.vinylAvatarGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(legGeo, this.vinylBodyMaterial);
+        rightLeg.position.set(0.28, 0.45, 0.05);
+        rightLeg.rotation.set(0.2, -0.05, -0.15);
+        this.vinylAvatarGroup.add(rightLeg);
+      },
+
+      buildBotanicalCore() {
+        this.botanicalTwinGroup = new THREE.Group();
+        this.twinMasterGroup.add(this.botanicalTwinGroup);
+
+        // Botanical Seed Pod Core Base
+        const seedGeo = new THREE.IcosahedronGeometry(0.36, 1);
+        const seedMat = new THREE.MeshStandardMaterial({
+          color: 0x00E676,
+          emissive: 0x00F2FE,
+          emissiveIntensity: 0.8,
+          wireframe: true
+        });
+        this.seedPodMesh = new THREE.Mesh(seedGeo, seedMat);
+        this.seedPodMesh.position.set(0, -0.35, 0);
+        this.botanicalTwinGroup.add(this.seedPodMesh);
+
+        // Central Spiral Trunk winding gracefully around the vinyl avatar
+        const splinePoints = [];
+        const turns = 2.5;
+        const totalPoints = 65;
+        for (let i = 0; i <= totalPoints; i++) {
+          const t = i / totalPoints;
+          const angle = t * Math.PI * 2 * turns;
+          const radius = 0.65 + Math.sin(t * Math.PI) * 0.25;
+          const x = Math.cos(angle) * radius;
+          const z = Math.sin(angle) * radius;
+          const y = t * 3.4 - 0.4;
+          splinePoints.push(new THREE.Vector3(x, y, z));
+        }
+
+        this.trunkCurve = new THREE.CatmullRomCurve3(splinePoints);
+
+        this.plantTrunkMaterial = new THREE.MeshStandardMaterial({
+          color: 0x11221c,
+          roughness: 0.35,
+          metalness: 0.3,
+          emissive: 0x00E676,
+          emissiveIntensity: 0.3
+        });
+
+        const tubeGeo = new THREE.TubeGeometry(this.trunkCurve, 70, 0.12, 12, false);
+        this.trunkMesh = new THREE.Mesh(tubeGeo, this.plantTrunkMaterial);
+        this.botanicalTwinGroup.add(this.trunkMesh);
+
+        // Foliage Group: Leaves that expand and bloom with Sleep & Sunlight
+        this.leavesGroup = new THREE.Group();
+        this.botanicalTwinGroup.add(this.leavesGroup);
+
+        this.plantLeafMaterial = new THREE.MeshStandardMaterial({
+          color: 0x00E676,
+          emissive: 0x00F2FE,
+          emissiveIntensity: 0.6,
+          side: THREE.DoubleSide,
+          roughness: 0.2
+        });
+
+        // Distribute procedural leaf petals along the trunk curve
+        this.leafMeshes = [];
+        const leafCount = 42;
+        const leafGeo = new THREE.PlaneGeometry(0.3, 0.16);
+        leafGeo.rotateX(Math.PI / 2);
+
+        for (let i = 0; i < leafCount; i++) {
+          const t = 0.15 + (i / leafCount) * 0.8;
+          const pt = this.trunkCurve.getPoint(t);
+          const tangent = this.trunkCurve.getTangent(t);
+
+          const leafMesh = new THREE.Mesh(leafGeo, this.plantLeafMaterial);
+          leafMesh.position.copy(pt);
+          leafMesh.lookAt(pt.clone().add(tangent));
+          leafMesh.rotation.z += (Math.random() - 0.5) * 1.5;
+          leafMesh.rotation.y += Math.PI / 2;
+
+          leafMesh.userData = {
+            baseScale: Math.random() * 0.5 + 0.8,
+            origPos: pt.clone()
+          };
+
+          this.leavesGroup.add(leafMesh);
+          this.leafMeshes.push(leafMesh);
+        }
+      },
+
+      buildConstrictingWeeds() {
+        this.weedsGroup = new THREE.Group();
+        this.twinMasterGroup.add(this.weedsGroup);
+
+        // Dark Thorny Splines that constrict around the avatar
+        this.weedSpikeMaterial = new THREE.MeshStandardMaterial({
+          color: 0x1a050d,
+          emissive: 0xFF1744,
+          emissiveIntensity: 0.9,
+          roughness: 0.3,
+          metalness: 0.5
+        });
+
+        const weedPoints = [];
+        const weedTurns = 3.2;
+        const pts = 55;
+        for (let i = 0; i <= pts; i++) {
+          const t = i / pts;
+          const angle = -t * Math.PI * 2 * weedTurns + 1.2;
+          const radius = 0.52 + Math.cos(t * Math.PI * 2) * 0.12;
+          const x = Math.cos(angle) * radius;
+          const z = Math.sin(angle) * radius;
+          const y = t * 2.8 + 0.2;
+          weedPoints.push(new THREE.Vector3(x, y, z));
+        }
+
+        const weedCurve = new THREE.CatmullRomCurve3(weedPoints);
+        const weedTubeGeo = new THREE.TubeGeometry(weedCurve, 60, 0.08, 10, false);
+        this.weedTubeMesh = new THREE.Mesh(weedTubeGeo, this.weedSpikeMaterial);
+        this.weedsGroup.add(this.weedTubeMesh);
+
+        // Thorn cones protruding from the weeds
+        this.thornMeshes = [];
+        const thornCount = 28;
+        const thornGeo = new THREE.ConeGeometry(0.06, 0.26, 8);
+        thornGeo.rotateX(Math.PI / 2);
+
+        for (let i = 0; i < thornCount; i++) {
+          const t = 0.08 + (i / thornCount) * 0.88;
+          const pt = weedCurve.getPoint(t);
+          const tangent = weedCurve.getTangent(t);
+
+          const thorn = new THREE.Mesh(thornGeo, this.weedSpikeMaterial);
+          thorn.position.copy(pt);
+          thorn.lookAt(pt.clone().add(tangent));
+          thorn.rotation.z += (i % 2 === 0 ? 1 : -1) * 1.2;
+
+          this.weedsGroup.add(thorn);
+          this.thornMeshes.push(thorn);
+        }
+      },
+
+      rebuildArchetypeGeometry() {
+        // Clear previous archetype decoration group
+        if (this.archetypeDecorGroup) {
+          this.twinMasterGroup.remove(this.archetypeDecorGroup);
+        }
+
+        this.archetypeDecorGroup = new THREE.Group();
+        this.twinMasterGroup.add(this.archetypeDecorGroup);
+
+        if (State.archetype === 'sakura') {
+          // 🌸 SAKURA: Ethereal Cherry Blossom clusters & drifting sakura petals
+          const sakuraMat = new THREE.MeshStandardMaterial({
+            color: 0xff4081,
+            emissive: 0xff80ab,
+            emissiveIntensity: 0.85,
+            side: THREE.DoubleSide
+          });
+
+          const petalGeo = new THREE.CircleGeometry(0.12, 5);
+          for (let i = 0; i < 48; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = 0.6 + Math.random() * 1.2;
+            const y = 2.2 + Math.random() * 1.5;
+            const petal = new THREE.Mesh(petalGeo, sakuraMat);
+            petal.position.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
+            petal.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            this.archetypeDecorGroup.add(petal);
+          }
+
+        } else if (State.archetype === 'oak') {
+          // 🌳 CYBER-OAK: Thick sturdy geometric canopy disks & golden cyber-acorns
+          const oakMat = new THREE.MeshStandardMaterial({
+            color: 0x00E676,
+            emissive: 0xFFB300,
+            emissiveIntensity: 0.4,
+            roughness: 0.3
+          });
+
+          const acornMat = new THREE.MeshStandardMaterial({
+            color: 0xFFB300,
+            emissive: 0xFFB300,
+            emissiveIntensity: 1.5
+          });
+
+          // Tiered canopy shields
+          for (let tier = 0; tier < 4; tier++) {
+            const diskGeo = new THREE.CylinderGeometry(1.2 - tier * 0.25, 1.4 - tier * 0.25, 0.08, 8);
+            const disk = new THREE.Mesh(diskGeo, oakMat);
+            disk.position.y = 2.2 + tier * 0.45;
+            this.archetypeDecorGroup.add(disk);
+
+            // Golden cyber acorns
+            for (let a = 0; a < 4; a++) {
+              const ang = (a / 4) * Math.PI * 2 + tier;
+              const acorn = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), acornMat);
+              acorn.position.set(Math.cos(ang) * (1.1 - tier * 0.2), 2.15 + tier * 0.45, Math.sin(ang) * (1.1 - tier * 0.2));
+              this.archetypeDecorGroup.add(acorn);
+            }
+          }
+
+        } else if (State.archetype === 'lotus') {
+          // 🪷 QUANTUM-LOTUS: Massive concentric blooming lotus base cradling the avatar
+          const lotusMat = new THREE.MeshStandardMaterial({
+            color: 0x00F2FE,
+            emissive: 0x00F2FE,
+            emissiveIntensity: 0.9,
+            side: THREE.DoubleSide,
+            roughness: 0.2
+          });
+
+          // Layer 1: Base Petals
+          const petalGeo = new THREE.ConeGeometry(0.3, 1.1, 4);
+          petalGeo.rotateX(Math.PI / 2);
+
+          const petalCount = 14;
+          for (let i = 0; i < petalCount; i++) {
+            const angle = (i / petalCount) * Math.PI * 2;
+            const p = new THREE.Mesh(petalGeo, lotusMat);
+            p.position.set(Math.cos(angle) * 1.1, 0.1, Math.sin(angle) * 1.1);
+            p.lookAt(0, 0.5, 0);
+            p.scale.set(1.4, 0.2, 1.4);
+            this.archetypeDecorGroup.add(p);
+          }
+
+          // Layer 2: Inner Blooming Petals
+          for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2 + 0.4;
+            const p = new THREE.Mesh(petalGeo, lotusMat);
+            p.position.set(Math.cos(angle) * 0.75, 0.35, Math.sin(angle) * 0.75);
+            p.lookAt(0, 1.0, 0);
+            p.scale.set(1.0, 0.2, 1.0);
+            this.archetypeDecorGroup.add(p);
+          }
+        }
+
+        // GSAP Pop scale-in for new archetype elements
+        this.archetypeDecorGroup.scale.set(0.01, 0.01, 0.01);
+        gsap.to(this.archetypeDecorGroup.scale, {
+          x: 1, y: 1, z: 1,
+          duration: 0.85,
+          ease: 'back.out(1.7)'
+        });
+      },
+
+      bindCameraViews() {
+        document.getElementById('cam-view-hero').addEventListener('click', () => {
+          gsap.to(this.camera.position, { x: 0, y: 1.6, z: 7.2, duration: 1.2, ease: 'power2.inOut' });
+          gsap.to(this.controls.target, { x: 0, y: 1.4, z: 0, duration: 1.2, ease: 'power2.inOut' });
+        });
+
+        document.getElementById('cam-view-canopy').addEventListener('click', () => {
+          gsap.to(this.camera.position, { x: 2.2, y: 3.5, z: 4.5, duration: 1.2, ease: 'power2.inOut' });
+          gsap.to(this.controls.target, { x: 0, y: 2.2, z: 0, duration: 1.2, ease: 'power2.inOut' });
+        });
+
+        document.getElementById('cam-view-roots').addEventListener('click', () => {
+          gsap.to(this.camera.position, { x: -2.8, y: -0.2, z: 4.8, duration: 1.2, ease: 'power2.inOut' });
+          gsap.to(this.controls.target, { x: 0, y: 0.4, z: 0, duration: 1.2, ease: 'power2.inOut' });
+        });
+      },
+
+      runIntroCinematic() {
+        // Sequential GSAP Loading: Sweep camera from deep virtual forest to hero angle
+        gsap.to(this.camera.position, {
+          x: 0,
+          y: 1.4,
+          z: 7.5,
+          duration: 2.4,
+          ease: 'power3.out',
+          onUpdate: () => this.controls.update()
+        });
+
+        // Staggered HUD entrance from left
+        gsap.from('.hud-stagger-item', {
+          x: -60,
+          opacity: 0,
+          duration: 0.9,
+          stagger: 0.12,
+          ease: 'power3.out',
+          delay: 0.3
+        });
+      },
+
+      onResize() {
+        const width = this.container.clientWidth;
+        const height = this.container.clientHeight;
+        if (!width || !height) return;
+
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
+      },
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+
+        const delta = this.clock.getDelta();
+        const time = this.clock.getElapsedTime();
+
+        // Real-time FPS Calculation
+        this.frameCount++;
+        if (time - this.lastFpsTime >= 0.5) {
+          const fps = Math.round((this.frameCount / (time - this.lastFpsTime)));
+          if (this.fpsBadge) {
+            this.fpsBadge.textContent = `${fps} FPS`;
+          }
+          this.frameCount = 0;
+          this.lastFpsTime = time;
+        }
+
+        // 1. Smooth Parameter Interpolation (Lerp) for 60 FPS Response
+        const lerpFactor = 0.08;
+        this.lerpState.sleep += (State.sleep - this.lerpState.sleep) * lerpFactor;
+        this.lerpState.study += (State.study - this.lerpState.study) * lerpFactor;
+        this.lerpState.sunlight += (State.sunlight - this.lerpState.sunlight) * lerpFactor;
+        this.lerpState.weeds += (State.weeds - this.lerpState.weeds) * lerpFactor;
+        this.lerpState.spending += (State.spending - this.lerpState.spending) * lerpFactor;
+        this.lerpState.score += (State.score - this.lerpState.score) * lerpFactor;
+
+        // 2. Vinyl Avatar Floating Idle Oscillation
+        if (this.vinylAvatarGroup) {
+          this.vinylAvatarGroup.position.y = Math.sin(time * 1.8) * 0.08;
+          this.vinylAvatarGroup.rotation.y = Math.sin(time * 0.6) * 0.06;
+          if (this.arcMesh) {
+            const arcPulse = 2.0 + Math.sin(time * 4.0) * 0.8;
+            this.arcReactorMaterial.emissiveIntensity = arcPulse;
+          }
+        }
+
+        // 3. Botanical Plant Growth Reaction to Sliders:
+        // Increasing Study scales the primary mesh structure thick and robust
+        if (this.trunkMesh) {
+          const studyScale = 0.6 + (this.lerpState.study / 100) * 0.9;
+          this.trunkMesh.scale.set(studyScale, 1.0, studyScale);
+        }
+
+        // Seed Pod Core Rotation & Pulsing
+        if (this.seedPodMesh) {
+          this.seedPodMesh.rotation.y = time * 0.5;
+          this.seedPodMesh.rotation.x = Math.sin(time * 0.8) * 0.3;
+          const seedScale = 0.8 + (this.lerpState.spending / 100) * 0.4;
+          this.seedPodMesh.scale.set(seedScale, seedScale, seedScale);
+        }
+
+        // Increasing Sleep & Sunlight expands leaf counts and triggers soft emissive blooms
+        if (this.leavesGroup) {
+          const leafScale = 0.3 + (this.lerpState.sleep / 100) * 0.7 + (this.lerpState.sunlight / 100) * 0.4;
+          const bloomGlow = 0.2 + (this.lerpState.sunlight / 100) * 1.5;
+
+          this.leavesGroup.children.forEach((leaf, idx) => {
+            const s = leaf.userData.baseScale * leafScale;
+            leaf.scale.set(s, s, s);
+            // Subtle flutter
+            leaf.rotation.z += Math.sin(time * 3.0 + idx) * 0.008;
+          });
+
+          this.plantLeafMaterial.emissiveIntensity = bloomGlow;
+        }
+
+        // Increasing Screen Weeds grows constricting dark thorny splines wrapping around the trunk
+        if (this.weedsGroup) {
+          const weedScale = Math.max(0.001, (this.lerpState.weeds / 100) * 1.4);
+          this.weedsGroup.scale.set(weedScale, 1.0, weedScale);
+          this.weedTubeMesh.scale.set(1.0 + (this.lerpState.weeds / 100) * 0.5, 1.0, 1.0 + (this.lerpState.weeds / 100) * 0.5);
+
+          // Thorny spikes stretch outward menacingly
+          this.thornMeshes.forEach(thorn => {
+            const ts = 0.2 + (this.lerpState.weeds / 100) * 1.4;
+            thorn.scale.set(ts, ts, ts);
+          });
+
+          // Toxic pulsing glow
+          this.weedSpikeMaterial.emissiveIntensity = 0.5 + Math.sin(time * 5.0) * 0.5 * (this.lerpState.weeds / 100);
+        }
+
+        // 4. Update Dynamic Shader Uniforms
+        if (this.horizonGridMaterial) {
+          this.horizonGridMaterial.uniforms.uTime.value = time;
+          if (State.score >= 75) {
+            this.horizonGridMaterial.uniforms.uColorA.value.setHex(0x00E676);
+            this.horizonGridMaterial.uniforms.uColorB.value.setHex(0x00F2FE);
+          } else {
+            this.horizonGridMaterial.uniforms.uColorA.value.setHex(0xFF1744);
+            this.horizonGridMaterial.uniforms.uColorB.value.setHex(0x7c0018);
+          }
+        }
+
+        // 5. Drift Floating Light Spores
+        if (this.spaceDustParticles) {
+          this.spaceDustParticles.rotation.y = time * 0.035;
+          const pos = this.spaceDustParticles.geometry.attributes.position.array;
+          for (let i = 1; i < pos.length; i += 3) {
+            pos[i] += Math.sin(time + pos[i - 1]) * 0.003;
+          }
+          this.spaceDustParticles.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // 6. Handle Archetype Dispersion Shockwave Particles
+        if (this.explosionParticles && this.explosionParticles.userData.active) {
+          const p = this.explosionParticles;
+          const pos = p.geometry.attributes.position.array;
+          const vel = p.geometry.attributes.velocity.array;
+          const prog = p.userData.progress;
+
+          for (let i = 0; i < pos.length / 3; i++) {
+            pos[i * 3] += vel[i * 3] * delta * (1.0 - prog * 0.5);
+            pos[i * 3 + 1] += vel[i * 3 + 1] * delta * (1.0 - prog * 0.5);
+            pos[i * 3 + 2] += vel[i * 3 + 2] * delta * (1.0 - prog * 0.5);
+          }
+          p.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // 7. Light Pulse Coordination
+        if (this.cyberLight) {
+          if (State.score >= 75) {
+            this.cyberLight.color.setHex(0x00E676);
+            this.cyanLight.color.setHex(0x00F2FE);
+          } else {
+            this.cyberLight.color.setHex(0xFF1744);
+            this.cyanLight.color.setHex(0x9D00FF);
+          }
+        }
+
+        // Controls & Render
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+      }
+    };
+
+    /* =====================================================
+     * 5. INITIALIZE APPLICATION ON DOM READY
+     * ===================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      UI.init();
+      Twin3D.init();
+    });
+  </script>
+</body>
+</html>
+
